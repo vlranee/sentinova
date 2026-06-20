@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinova — Deteksi Fraud Tweet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
+<script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #1A1A2E; --surface: #F7F6F2; --panel: #EDEAE3;
+    --accent: #D64045; --safe: #2E7D5A; --muted: #8A8680;
+    --border: #D8D4CC; --white: #FFFFFF;
+  }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; }
+  header { background: var(--ink); padding: 0 2rem; display: flex; align-items: center; gap: 2rem; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.1rem; color: var(--white); letter-spacing: -0.01em; white-space: nowrap; }
+  .logo span { color: var(--accent); }
+  nav { display: flex; gap: 0; flex: 1; }
+  nav button { background: none; border: none; color: rgba(255,255,255,0.5); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem; font-weight: 500; padding: 0 1.1rem; height: 56px; cursor: pointer; transition: color 0.15s, border-bottom 0.15s; border-bottom: 2px solid transparent; letter-spacing: 0.01em; }
+  nav button:hover { color: rgba(255,255,255,0.8); }
+  nav button.active { color: var(--white); border-bottom-color: var(--accent); }
+  .tab { display: none; padding: 2rem; max-width: 1000px; margin: 0 auto; }
+  .tab.active { display: block; }
+  .analyze-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media (max-width: 700px) { .analyze-grid { grid-template-columns: 1fr; } }
+  .panel { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
+  .panel-label { font-family: 'Sora', sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+  textarea { width: 100%; min-height: 160px; border: 1.5px solid var(--border); border-radius: 8px; padding: 1rem; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.92rem; color: var(--ink); background: var(--surface); resize: vertical; transition: border-color 0.15s; line-height: 1.6; }
+  textarea:focus { outline: none; border-color: var(--ink); }
+  .btn-analyze { margin-top: 1rem; width: 100%; padding: 0.85rem; background: var(--ink); color: var(--white); border: none; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: background 0.15s, transform 0.1s; letter-spacing: 0.02em; }
+  .btn-analyze:hover { background: #2a2a4a; }
+  .btn-analyze:active { transform: scale(0.98); }
+  .btn-analyze:disabled { background: var(--border); cursor: not-allowed; }
+  .result-placeholder { height: 160px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.85rem; text-align: center; line-height: 1.6; }
+  .verdict-block { display: none; }
+  .verdict-block.show { display: block; }
+  .verdict-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; }
+  .verdict-badge { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.1rem; padding: 0.4rem 1rem; border-radius: 6px; letter-spacing: 0.04em; }
+  .verdict-badge.fraud { background: #FEE2E2; color: var(--accent); }
+  .verdict-badge.nonfraud { background: #D1FAE5; color: var(--safe); }
+  .gauge-wrap { display: flex; align-items: center; gap: 1.2rem; margin-bottom: 1.2rem; }
+  .gauge-svg { flex-shrink: 0; }
+  .gauge-label { font-family: 'Sora', sans-serif; }
+  .gauge-label .conf-num { font-size: 2rem; font-weight: 700; line-height: 1; }
+  .gauge-label .conf-text { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+  .xai-section { margin-top: 1rem; }
+  .xai-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.5rem; }
+  .text-annotated { font-size: 0.9rem; line-height: 1.8; background: var(--surface); padding: 0.75rem 1rem; border-radius: 7px; border: 1px solid var(--border); }
+  .kw-fraud { background: #FEE2E2; color: #991B1B; border-radius: 3px; padding: 0 3px; font-weight: 600; }
+  .kw-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+  .kw-chip { background: #FEE2E2; color: #991B1B; border-radius: 20px; padding: 0.15rem 0.65rem; font-size: 0.78rem; font-weight: 600; }
+  .kw-chip.safe { background: #D1FAE5; color: #065F46; }
+  .loading-dots { display: inline-flex; gap: 4px; align-items: center; }
+  .loading-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--white); animation: bounce 1.2s infinite; }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
+  .vis-header { margin-bottom: 1.5rem; }
+  .vis-header h2 { font-family: 'Sora', sans-serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .vis-header p { color: var(--muted); font-size: 0.88rem; }
+  .vis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  @media (max-width: 700px) { .vis-grid { grid-template-columns: 1fr; } }
+  .chart-panel { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
+  .chart-title { font-family: 'Sora', sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--ink); margin-bottom: 1rem; }
+  .chart-sub { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.75rem; }
+  canvas { max-width: 100%; }
+  .wordcloud-panel { grid-column: 1 / -1; background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
+  .empty-vis { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 0.88rem; line-height: 1.7; }
+  .empty-vis .empty-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+  .drop-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 3rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; background: var(--white); }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--ink); background: var(--panel); }
+  .drop-zone input { display: none; }
+  .drop-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .drop-title { font-family: 'Sora', sans-serif; font-weight: 600; margin-bottom: 0.3rem; }
+  .drop-sub { font-size: 0.82rem; color: var(--muted); }
+  .batch-results { margin-top: 1.5rem; }
+  .batch-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--white); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+  .batch-table th { background: var(--panel); padding: 0.65rem 1rem; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .batch-table td { padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); color: var(--ink); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .batch-table tr:last-child td { border-bottom: none; }
+  .badge-fraud { color: var(--accent); font-weight: 700; }
+  .badge-nonfraud { color: var(--safe); font-weight: 700; }
+  .edu-intro { font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem; line-height: 1.7; }
+  .edu-section { margin-bottom: 2rem; }
+  .edu-section h2 { font-family: 'Sora', sans-serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--panel); }
+  .edu-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+  .edu-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; transition: box-shadow 0.15s; }
+  .edu-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+  .edu-card-icon { width: 28px; height: 28px; margin-bottom: 0.75rem; color: var(--accent); }
+  .edu-card-icon svg { width: 100%; height: 100%; }
+  .edu-card-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .edu-card-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+  .tips-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
+  .tips-list li { display: flex; align-items: flex-start; gap: 0.75rem; background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.88rem; line-height: 1.6; }
+  .tips-list li::before { content: "✓"; color: var(--safe); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .warning-list li::before { content: "⚠"; color: var(--accent); }
+  .about-stack { display: flex; flex-direction: column; gap: 1rem; max-width: 600px; }
+  .about-block { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.4rem; }
+  .about-block h3 { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.95rem; margin-bottom: 0.6rem; }
+  .about-block p { font-size: 0.88rem; color: var(--muted); line-height: 1.7; }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+  .tag { background: var(--panel); border-radius: 20px; padding: 0.2rem 0.75rem; font-size: 0.75rem; font-weight: 600; color: var(--ink); }
+  .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--ink); color: var(--white); padding: 0.7rem 1.2rem; border-radius: 8px; font-size: 0.85rem; transform: translateY(80px); opacity: 0; transition: transform 0.3s, opacity 0.3s; z-index: 999; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .stat-row { display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+  .stat-chip { background: var(--panel); border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.82rem; }
+  .stat-chip strong { font-family: 'Sora', sans-serif; font-size: 1.1rem; display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Senti<span>Nova</span></div>
+  <nav id="main-nav">
+    <button class="active" onclick="switchTab('analisis')">Analisis</button>
+    <button onclick="switchTab('visualisasi')">Visualisasi</button>
+    <button onclick="switchTab('batch')">Batch</button>
+    <button onclick="switchTab('edukasi')">Edukasi</button>
+    <button onclick="switchTab('tentang')">Tentang</button>
+  </nav>
+</header>
+
+<div class="tab active" id="tab-analisis">
+  <div class="analyze-grid">
+    <div class="panel">
+      <div class="panel-label">Teks</div>
+      <textarea id="text-input" placeholder="Masukkan teks di sini..."></textarea>
+      <button class="btn-analyze" id="btn-analyze" onclick="doAnalyze()">Analisis Sekarang</button>
+    </div>
+    <div class="panel">
+      <div class="panel-label">Hasil Prediksi</div>
+      <div class="result-placeholder" id="result-placeholder">
+        <strong>Analisis Sekarang</strong>
+      </div>
+      <div class="verdict-block" id="verdict-block">
+        <div class="verdict-header">
+          <div class="verdict-badge" id="verdict-badge">—</div>
+        </div>
+        <div class="gauge-wrap">
+          <svg class="gauge-svg" viewBox="0 0 100 60" width="120" height="72">
+            <path d="M10,55 A40,40 0 0,1 90,55" fill="none" stroke="#E5E2DC" stroke-width="8" stroke-linecap="round"/>
+            <path id="gauge-arc" d="M10,55 A40,40 0 0,1 90,55" fill="none" stroke="#D64045" stroke-width="8" stroke-linecap="round" stroke-dasharray="126" stroke-dashoffset="126"/>
+          </svg>
+          <div class="gauge-label">
+            <div class="conf-num" id="conf-num">0%</div>
+            <div class="conf-text">Confidence Score</div>
+          </div>
+        </div>
+        <div class="xai-section">
+          <div class="xai-title">Kata Kunci Terdeteksi</div>
+          <div class="text-annotated" id="text-annotated"></div>
+          <div class="kw-chips" id="kw-chips"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="stat-row" id="stat-row" style="display:none!important;">
+    <div class="stat-chip"><strong id="stat-total">0</strong>Total Dianalisis</div>
+    <div class="stat-chip"><strong id="stat-fraud">0</strong>Fraud</div>
+    <div class="stat-chip"><strong id="stat-nonfraud">0</strong>Non-Fraud</div>
+    <div class="stat-chip"><strong id="stat-avgconf">—</strong>Rata-rata Confidence</div>
+  </div>
+</div>
+
+<div class="tab" id="tab-visualisasi">
+  <div class="vis-header">
+    <h2>Visualisasi Hasil Sesi</h2>
+    <p>Data berdasarkan semua teks yang telah Anda analisis dalam sesi ini.</p>
+  </div>
+  <div id="vis-empty" class="empty-vis">
+    <div class="empty-icon">📊</div>
+    Belum ada data.<br>Analisis beberapa teks terlebih dahulu, lalu kembali ke halaman ini.
+  </div>
+  <div id="vis-content" style="display:none">
+    <div class="vis-grid">
+      <div class="chart-panel">
+        <div class="chart-title">Distribusi Prediksi</div>
+        <div class="chart-sub">Proporsi Fraud vs Non-Fraud</div>
+        <canvas id="pie-chart" height="200"></canvas>
+      </div>
+      <div class="chart-panel">
+        <div class="chart-title">Rata-rata Confidence per Kelas</div>
+        <div class="chart-sub">Seberapa yakin model untuk tiap prediksi</div>
+        <canvas id="bar-chart" height="200"></canvas>
+      </div>
+      <div class="wordcloud-panel">
+        <div class="chart-title">Word Cloud — Kata Sering Muncul</div>
+        <div class="chart-sub">Dari semua teks yang dianalisis</div>
+        <canvas id="wc-canvas" width="900" height="280" style="width:100%;height:280px;"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab" id="tab-batch">
+  <div class="vis-header">
+    <h2>Analisis Massal (CSV)</h2>
+    <p>Upload file CSV dengan kolom <code>text</code> berisi teks yang akan diklasifikasi.</p>
+  </div>
+  <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-input').click()"
+    ondragover="event.preventDefault();this.classList.add('drag-over')"
+    ondragleave="this.classList.remove('drag-over')"
+    ondrop="handleDrop(event)">
+    <input type="file" id="csv-input" accept=".csv" onchange="handleCSV(this.files[0])">
+    <div class="drop-icon">📂</div>
+    <div class="drop-title">Klik atau seret file CSV ke sini</div>
+    <div class="drop-sub">Format: kolom pertama berisi teks</div>
+  </div>
+  <div class="batch-results" id="batch-results" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+      <span id="batch-summary" style="font-size:0.85rem;color:var(--muted)"></span>
+      <button onclick="downloadBatchCSV()" style="background:var(--ink);color:#fff;border:none;border-radius:6px;padding:0.4rem 0.9rem;font-size:0.8rem;cursor:pointer;font-family:inherit;">Unduh Hasil</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="batch-table">
+        <thead><tr><th>#</th><th>Teks</th><th>Prediksi</th><th>Confidence</th></tr></thead>
+        <tbody id="batch-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="tab" id="tab-edukasi">
+  <p class="edu-intro">Kenali berbagai modus penipuan digital agar Anda tidak menjadi korban.</p>
+  <div class="edu-section">
+    <h2>Jenis Penipuan Umum</h2>
+    <div class="edu-cards">
+      <div class="edu-card">
+        <div class="edu-card-icon"><i data-lucide="gift"></i></div>
+        <div class="edu-card-title">Penipuan Hadiah Palsu</div>
+        <div class="edu-card-desc">Korban diberitahu memenangkan hadiah besar, namun diminta membayar "biaya administrasi" atau "pajak" terlebih dahulu.</div>
+      </div>
+      <div class="edu-card">
+        <div class="edu-card-icon"><i data-lucide="shield-off"></i></div>
+        <div class="edu-card-title">Phishing Link</div>
+        <div class="edu-card-desc">Tautan palsu dikirim untuk mencuri data login, PIN, atau informasi kartu kredit dengan meniru tampilan situs resmi.</div>
+      </div>
+      <div class="edu-card">
+        <div class="edu-card-icon"><i data-lucide="package-x"></i></div>
+        <div class="edu-card-title">Penipuan Paket</div>
+        <div class="edu-card-desc">Mengaku dari jasa pengiriman, meminta korban membayar biaya paket tertahan atau mengklik link konfirmasi.</div>
+      </div>
+      <div class="edu-card">
+        <div class="edu-card-icon"><i data-lucide="landmark"></i></div>
+        <div class="edu-card-title">Modus Bank/OTP</div>
+        <div class="edu-card-desc">Berpura-pura sebagai bank atau e-wallet, meminta kode OTP, nomor rekening, atau data nasabah.</div>
+      </div>
+      <div class="edu-card">
+        <div class="edu-card-icon"><i data-lucide="briefcase"></i></div>
+        <div class="edu-card-title">Lowongan Kerja Palsu</div>
+        <div class="edu-card-desc">Menawarkan pekerjaan bergaji tinggi dengan syarat transfer biaya pendaftaran atau pembelian peralatan.</div>
+      </div>
+      <div class="edu-card">
+        <div class="edu-card-icon"><i data-lucide="user-x"></i></div>
+        <div class="edu-card-title">Social Engineering</div>
+        <div class="edu-card-desc">Berpura-pura sebagai kerabat atau teman yang dalam keadaan darurat dan membutuhkan transfer uang segera.</div>
+      </div>
+    </div>
+  </div>
+  <div class="edu-section">
+    <h2>Ciri-ciri Pesan Penipuan</h2>
+    <ul class="tips-list warning-list">
+      <li>Menggunakan urgensi waktu — "Segera!" / "Hari ini saja!" / "Dalam 2 jam"</li>
+      <li>Menjanjikan hadiah atau keuntungan yang tidak masuk akal</li>
+      <li>Meminta data pribadi: PIN, OTP, nomor rekening, KTP</li>
+      <li>Link mencurigakan — bukan domain resmi atau menggunakan shortener</li>
+      <li>Mengatasnamakan institusi resmi (bank, pemerintah, marketplace)</li>
+      <li>Nomor pengirim tidak dikenal atau menggunakan nomor pribadi biasa</li>
+      <li>Tata bahasa buruk, tanda baca tidak wajar, atau huruf kapital berlebihan</li>
+    </ul>
+  </div>
+  <div class="edu-section">
+    <h2>Tips Menghindari Penipuan</h2>
+    <ul class="tips-list">
+      <li>Jangan pernah membagikan kode OTP kepada siapapun, termasuk yang mengaku petugas bank</li>
+      <li>Verifikasi langsung ke call center resmi jika menerima pesan mencurigakan dari bank</li>
+      <li>Jangan klik link dari kontak atau orang yang tidak dikenal — buka situs langsung dari browser</li>
+      <li>Laporkan ke <strong>layanan.kominfo.go.id</strong> jika menemukan konten penipuan</li>
+      <li>Aktifkan autentikasi dua faktor di semua akun penting</li>
+      <li>Blokir dan laporkan nomor pengirim pesan penipuan</li>
+      <li>Edukasi anggota keluarga yang kurang familiar dengan penipuan digital</li>
+    </ul>
+  </div>
+</div>
+
+<div class="tab" id="tab-tentang">
+  <div class="about-stack">
+    <div class="about-block">
+      <h3>Sentinova</h3>
+      <p>Sistem deteksi penipuan berbasis Deep Learning yang dilatih pada dataset X berbahasa Indonesia. Membantu masyarakat mengidentifikasi pesan penipuan secara cepat dan akurat.</p>
+    </div>
+    <div class="about-block">
+      <h3>Model</h3>
+      <p>Menggunakan pendekatan keyword-based XAI untuk menjelaskan prediksi, dengan kata kunci fraud yang diidentifikasi dari analisis dataset penipuan dari platform X Indonesia.</p>
+      <div class="tag-row">
+        <span class="tag">NLP</span><span class="tag">Text Classification</span>
+        <span class="tag">Bahasa Indonesia</span><span class="tag">XAI</span>
+      </div>
+    </div>
+    <div class="about-block">
+      <h3>Batasan</h3>
+      <p>Sistem ini adalah alat bantu, bukan pengganti penilaian manusia. Prediksi mungkin tidak 100% akurat.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const session = { results: [], allWords: [] };
+let pieChart = null, barChart = null;
+
+const FRAUD_KEYWORDS = [
+  'hadiah','menang','klik','transfer','rekening','gratis','dp','uang','bayar',
+  'segera','konfirmasi','verifikasi','pin','otp','password','kode','link',
+  'bonus','pulsa','tunai','biaya','admin','pajak','ditahan','paket','jackpot',
+  'promo','diskon besar','terpilih','selamat','anda terpilih','klaim','WA','whatsapp'
+];
+
+const STOPWORDS = new Set([
+  'yang','dan','di','ke','dari','ini','itu','dengan','untuk','adalah','akan','ada','tidak',
+  'saya','anda','bisa','dalam','pada','atau','juga','sudah','oleh','sebuah','se','nya','ya',
+  'jika','bila','maka','kami','kita','mereka','ia','dia','satu','dua','tiga','pun','lah',
+  'lagi','paling','sangat','banget','telah','masih','belum','karena','sehingga','namun',
+  'tetapi','tapi','hingga','sampai','agar','supaya','walau','meski','bahwa','lebih',
+  'semua','setiap','selalu','hari','tahun','bulan','minggu','kali','setelah','sebelum'
+]);
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const names = ['analisis','visualisasi','batch','edukasi','tentang'];
+  document.querySelectorAll('nav button')[names.indexOf(name)].classList.add('active');
+  if (name === 'visualisasi') renderVisual();
+}
+
+async function doAnalyze() {
+  const text = document.getElementById('text-input').value.trim();
+  if (!text) { showToast('Masukkan teks terlebih dahulu.'); return; }
+  const btn = document.getElementById('btn-analyze');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-dots"><span></span><span></span><span></span></span>';
+  document.getElementById('result-placeholder').style.display = 'none';
+  document.getElementById('verdict-block').classList.remove('show');
+  const API_URL = window.FLASK_API_URL || 'http://localhost:5000';
+  try {
+    const response = await fetch(API_URL + '/predict', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    if (!response.ok) throw new Error('API error');
+    const data = await response.json();
+    const label = data.prediction === 'FRAUD' ? 'FRAUD' : 'NON_FRAUD';
+    showResult(text, label, data.confidence, []);
+    addToSession(text, label, data.confidence);
+  } catch {
+    const r = localAnalyze(text);
+    showResult(text, r.label, r.confidence, r.keywords);
+    addToSession(text, r.label, r.confidence);
+    showToast('Mode offline: analisis lokal digunakan.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Analisis Sekarang';
+  }
+}
+
+function localAnalyze(text) {
+  const lower = text.toLowerCase();
+  const found = FRAUD_KEYWORDS.filter(kw => lower.includes(kw.toLowerCase()));
+  const score = Math.min(0.95, 0.4 + found.length * 0.08);
+  return {
+    label: found.length >= 2 ? 'FRAUD' : 'NON_FRAUD',
+    confidence: found.length >= 2 ? score : (0.95 - score),
+    keywords: found.slice(0, 6)
+  };
+}
+
+function showResult(text, label, confidence, keywords) {
+  document.getElementById('verdict-block').classList.add('show');
+  const isFraud = label === 'FRAUD';
+  const badge = document.getElementById('verdict-badge');
+  badge.textContent = isFraud ? '⚠ FRAUD' : '✓ NON-FRAUD';
+  badge.className = 'verdict-badge ' + (isFraud ? 'fraud' : 'nonfraud');
+  const arc = document.getElementById('gauge-arc');
+  const total = 126;
+  arc.setAttribute('stroke', isFraud ? '#D64045' : '#2E7D5A');
+  arc.style.strokeDashoffset = total;
+  requestAnimationFrame(() => {
+    arc.style.transition = 'stroke-dashoffset 0.8s ease';
+    arc.style.strokeDashoffset = total - (confidence * total);
+  });
+  const confEl = document.getElementById('conf-num');
+  let start = 0, end = Math.round(confidence * 100);
+  const step = () => { start += Math.ceil((end - start) / 8) || 1; confEl.textContent = Math.min(start, end) + '%'; if (start < end) requestAnimationFrame(step); };
+  step();
+  let annotated = escapeHtml(text);
+  const foundKw = [];
+  FRAUD_KEYWORDS.forEach(kw => {
+    const re = new RegExp('(' + escapeRe(kw) + ')', 'gi');
+    if (re.test(annotated)) { foundKw.push(kw); annotated = annotated.replace(re, '<span class="kw-fraud">$1</span>'); }
+  });
+  document.getElementById('text-annotated').innerHTML = annotated;
+  const allKw = keywords.length ? keywords : foundKw.slice(0, 6);
+  const chips = document.getElementById('kw-chips');
+  chips.innerHTML = '';
+  if (allKw.length === 0 && !isFraud) chips.innerHTML = '<span class="kw-chip safe">Tidak ada kata mencurigakan</span>';
+  else allKw.forEach(kw => { chips.innerHTML += '<span class="kw-chip">' + escapeHtml(kw) + '</span>'; });
+}
+
+function addToSession(text, label, confidence) {
+  session.results.push({ text, label, confidence });
+  session.allWords.push(...text.toLowerCase().split(/\W+/).filter(w => w.length > 2 && !STOPWORDS.has(w)));
+  updateStats();
+}
+
+function updateStats() {
+  const total = session.results.length;
+  const fraud = session.results.filter(r => r.label === 'FRAUD').length;
+  const avgConf = (session.results.reduce((s, r) => s + r.confidence, 0) / total * 100).toFixed(0);
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-fraud').textContent = fraud;
+  document.getElementById('stat-nonfraud').textContent = total - fraud;
+  document.getElementById('stat-avgconf').textContent = avgConf + '%';
+  document.getElementById('stat-row').style.cssText = total > 0 ? 'display:flex' : 'display:none!important';
+}
+
+function renderVisual() {
+  const hasData = session.results.length > 0;
+  document.getElementById('vis-empty').style.display = hasData ? 'none' : 'block';
+  document.getElementById('vis-content').style.display = hasData ? 'block' : 'none';
+  if (!hasData) return;
+  const fraud = session.results.filter(r => r.label === 'FRAUD').length;
+  const nonfraud = session.results.length - fraud;
+  if (pieChart) pieChart.destroy();
+  pieChart = new Chart(document.getElementById('pie-chart'), {
+    type: 'doughnut',
+    data: { labels: ['Fraud', 'Non-Fraud'], datasets: [{ data: [fraud, nonfraud], backgroundColor: ['#D64045','#2E7D5A'], borderWidth: 0, hoverOffset: 4 }] },
+    options: { plugins: { legend: { position: 'bottom', labels: { font: { family: 'Plus Jakarta Sans', size: 12 }, padding: 16 } } }, cutout: '65%' }
+  });
+  const fraudConfs = session.results.filter(r => r.label === 'FRAUD').map(r => r.confidence);
+  const nonfraudConfs = session.results.filter(r => r.label === 'NON_FRAUD').map(r => r.confidence);
+  const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length*100).toFixed(1) : 0;
+  if (barChart) barChart.destroy();
+  barChart = new Chart(document.getElementById('bar-chart'), {
+    type: 'bar',
+    data: { labels: ['Fraud','Non-Fraud'], datasets: [{ label: 'Rata-rata Confidence (%)', data: [avg(fraudConfs), avg(nonfraudConfs)], backgroundColor: ['#D64045CC','#2E7D5ACC'], borderRadius: 6, borderSkipped: false }] },
+    options: { scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v+'%' }, grid: { color: '#EDEAE3' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
+  });
+  const freq = {};
+  session.allWords.forEach(w => { freq[w] = (freq[w]||0)+1; });
+  const list = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,60);
+  if (list.length > 0) {
+    const canvas = document.getElementById('wc-canvas');
+    canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+    WordCloud(canvas, { list, gridSize:12, weightFactor: s=>Math.max(12,s*8), fontFamily:'Plus Jakarta Sans', color: w => FRAUD_KEYWORDS.some(k=>w.toLowerCase().includes(k.toLowerCase())) ? '#D64045' : (Math.random()>0.5?'#1A1A2E':'#8A8680'), rotateRatio:0.3, backgroundColor:'#FFFFFF' });
+  }
+}
+
+let batchData = [];
+function handleDrop(e) { e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleCSV(e.dataTransfer.files[0]); }
+function handleCSV(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const lines = e.target.result.trim().split('\n');
+    const rows = lines.map(l => l.split(',')[0].replace(/"/g,'').trim()).filter(Boolean);
+    const header = rows[0].toLowerCase();
+    const texts = (header === 'text') ? rows.slice(1) : rows;
+    batchData = [];
+    const tbody = document.getElementById('batch-tbody');
+    tbody.innerHTML = '';
+    document.getElementById('batch-results').style.display = 'block';
+    document.getElementById('batch-summary').textContent = 'Menganalisis ' + texts.length + ' teks...';
+    for (let i = 0; i < texts.length; i++) {
+      const text = texts[i]; let label, confidence;
+      try {
+        const res = await fetch((window.FLASK_API_URL||'http://localhost:5000')+'/predict', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text}) });
+        if (!res.ok) throw new Error();
+        const d = await res.json(); label = d.prediction==='FRAUD'?'FRAUD':'NON_FRAUD'; confidence = d.confidence;
+      } catch { const r=localAnalyze(text); label=r.label; confidence=r.confidence; }
+      batchData.push({text,label,confidence});
+      addToSession(text,label,confidence);
+      const isFraud = label==='FRAUD';
+      tbody.innerHTML += '<tr><td>'+(i+1)+'</td><td title="'+escapeHtml(text)+'">'+escapeHtml(text.slice(0,60))+(text.length>60?'…':'')+'</td><td class="'+(isFraud?'badge-fraud':'badge-nonfraud')+'">'+label+'</td><td>'+(confidence*100).toFixed(1)+'%</td></tr>';
+    }
+    const fraudCount = batchData.filter(r=>r.label==='FRAUD').length;
+    document.getElementById('batch-summary').textContent = texts.length+' teks dianalisis — '+fraudCount+' Fraud, '+(texts.length-fraudCount)+' Non-Fraud';
+  };
+  reader.readAsText(file);
+}
+function downloadBatchCSV() {
+  if (!batchData.length) return;
+  const rows = [['text','label','confidence'],...batchData.map(r=>['"'+r.text.replace(/"/g,'""')+'"',r.label,(r.confidence*100).toFixed(1)+'%'])];
+  const blob = new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='hasil_analisis.csv'; a.click();
+}
+document.getElementById('text-input').addEventListener('keydown', e => { if (e.ctrlKey && e.key==='Enter') doAnalyze(); });
+function escapeHtml(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escapeRe(str) { return str.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+</script>
+<script>
+  (function() {
+    const params = new URLSearchParams(window.location.search);
+    window.FLASK_API_URL = params.get('api_url') || 'http://localhost:5000';
+  })();
+</script>
+<script>lucide.createIcons();</script>
+</body>
+</html>
