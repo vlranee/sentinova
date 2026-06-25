@@ -154,7 +154,6 @@
     <div class="stat-chip"><strong id="stat-total">0</strong>Total Dianalisis</div>
     <div class="stat-chip"><strong id="stat-fraud">0</strong>Fraud</div>
     <div class="stat-chip"><strong id="stat-nonfraud">0</strong>Non-Fraud</div>
-    <div class="stat-chip"><strong id="stat-avgconf">—</strong>Rata-rata Confidence</div>
   </div>
 </div>
 
@@ -175,9 +174,6 @@
         <canvas id="pie-chart" height="200"></canvas>
       </div>
       <div class="chart-panel">
-        <div class="chart-title">Rata-rata Confidence per Kelas</div>
-        <div class="chart-sub">Seberapa yakin model untuk tiap prediksi</div>
-        <canvas id="bar-chart" height="200"></canvas>
       </div>
       <div class="wordcloud-panel">
         <div class="chart-title">Word Cloud — Kata Sering Muncul</div>
@@ -209,7 +205,10 @@
     </div>
     <div style="overflow-x:auto;">
       <table class="batch-table">
-        <thead><tr><th>#</th><th>Teks</th><th>Prediksi</th><th>Confidence</th></tr></thead>
+        <thead>
+         <tr><th>#</th><th>Teks</th> <th>Hasil</th>
+         </tr>
+        </thead>
         <tbody id="batch-tbody"></tbody>
       </table>
     </div>
@@ -308,7 +307,7 @@
 
 <script>
 const session = { results: [], allWords: [] };
-let pieChart = null, barChart = null;
+let pieChart = null;
 
 const FRAUD_KEYWORDS = [
   'hadiah','menang','klik','transfer','rekening','gratis','dp','uang','bayar',
@@ -380,20 +379,10 @@ function showResult(text, label, confidence, keywords) {
   document.getElementById('verdict-block').classList.add('show');
   const isFraud = label === 'FRAUD';
   const badge = document.getElementById('verdict-badge');
-  badge.textContent = isFraud ? '⚠ FRAUD' : '✓ NON-FRAUD';
+  badge.textContent = isFraud
+  ? 'TERINDIKASI PENIPUAN'
+  : 'AMAN';
   badge.className = 'verdict-badge ' + (isFraud ? 'fraud' : 'nonfraud');
-  const arc = document.getElementById('gauge-arc');
-  const total = 126;
-  arc.setAttribute('stroke', isFraud ? '#D64045' : '#2E7D5A');
-  arc.style.strokeDashoffset = total;
-  requestAnimationFrame(() => {
-    arc.style.transition = 'stroke-dashoffset 0.8s ease';
-    arc.style.strokeDashoffset = total - (confidence * total);
-  });
-  const confEl = document.getElementById('conf-num');
-  let start = 0, end = Math.round(confidence * 100);
-  const step = () => { start += Math.ceil((end - start) / 8) || 1; confEl.textContent = Math.min(start, end) + '%'; if (start < end) requestAnimationFrame(step); };
-  step();
   let annotated = escapeHtml(text);
   const foundKw = [];
   FRAUD_KEYWORDS.forEach(kw => {
@@ -409,7 +398,7 @@ function showResult(text, label, confidence, keywords) {
 }
 
 function addToSession(text, label, confidence) {
-  session.results.push({ text, label, confidence });
+  session.results.push({ text, label });
   session.allWords.push(...text.toLowerCase().split(/\W+/).filter(w => w.length > 2 && !STOPWORDS.has(w)));
   updateStats();
 }
@@ -417,11 +406,9 @@ function addToSession(text, label, confidence) {
 function updateStats() {
   const total = session.results.length;
   const fraud = session.results.filter(r => r.label === 'FRAUD').length;
-  const avgConf = (session.results.reduce((s, r) => s + r.confidence, 0) / total * 100).toFixed(0);
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-fraud').textContent = fraud;
   document.getElementById('stat-nonfraud').textContent = total - fraud;
-  document.getElementById('stat-avgconf').textContent = avgConf + '%';
   document.getElementById('stat-row').style.cssText = total > 0 ? 'display:flex' : 'display:none!important';
 }
 
@@ -437,15 +424,6 @@ function renderVisual() {
     type: 'doughnut',
     data: { labels: ['Fraud', 'Non-Fraud'], datasets: [{ data: [fraud, nonfraud], backgroundColor: ['#D64045','#2E7D5A'], borderWidth: 0, hoverOffset: 4 }] },
     options: { plugins: { legend: { position: 'bottom', labels: { font: { family: 'Plus Jakarta Sans', size: 12 }, padding: 16 } } }, cutout: '65%' }
-  });
-  const fraudConfs = session.results.filter(r => r.label === 'FRAUD').map(r => r.confidence);
-  const nonfraudConfs = session.results.filter(r => r.label === 'NON_FRAUD').map(r => r.confidence);
-  const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length*100).toFixed(1) : 0;
-  if (barChart) barChart.destroy();
-  barChart = new Chart(document.getElementById('bar-chart'), {
-    type: 'bar',
-    data: { labels: ['Fraud','Non-Fraud'], datasets: [{ label: 'Rata-rata Confidence (%)', data: [avg(fraudConfs), avg(nonfraudConfs)], backgroundColor: ['#D64045CC','#2E7D5ACC'], borderRadius: 6, borderSkipped: false }] },
-    options: { scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v+'%' }, grid: { color: '#EDEAE3' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
   });
   const freq = {};
   session.allWords.forEach(w => { freq[w] = (freq[w]||0)+1; });
@@ -479,19 +457,25 @@ function handleCSV(file) {
         if (!res.ok) throw new Error();
         const d = await res.json(); label = d.prediction==='FRAUD'?'FRAUD':'NON_FRAUD'; confidence = d.confidence;
       } catch { const r=localAnalyze(text); label=r.label; confidence=r.confidence; }
-      batchData.push({text,label,confidence});
+      batchData.push({text,label});
       addToSession(text,label,confidence);
       const isFraud = label==='FRAUD';
-      tbody.innerHTML += '<tr><td>'+(i+1)+'</td><td title="'+escapeHtml(text)+'">'+escapeHtml(text.slice(0,60))+(text.length>60?'…':'')+'</td><td class="'+(isFraud?'badge-fraud':'badge-nonfraud')+'">'+label+'</td><td>'+(confidence*100).toFixed(1)+'%</td></tr>';
+     tbody.innerHTML +='<tr><td>'+(i+1)+'</td><td title="'+escapeHtml(text)+'">'+ escapeHtml(text.slice(0,60))+ (text.length>60?'…':'')+ '</td><td class="'+ (isFraud?'badge-fraud':'badge-nonfraud')+ '">'+ (isFraud ? 'TERINDIKASI PENIPUAN' : 'AMAN')+ '</td></tr>';
     }
     const fraudCount = batchData.filter(r=>r.label==='FRAUD').length;
-    document.getElementById('batch-summary').textContent = texts.length+' teks dianalisis — '+fraudCount+' Fraud, '+(texts.length-fraudCount)+' Non-Fraud';
+    document.getElementById('batch-summary').textContent = texts.length+' teks dianalisis — '+ fraudCount+' Terindikasi Penipuan, '+ (texts.length-fraudCount)+' Aman';
   };
   reader.readAsText(file);
 }
 function downloadBatchCSV() {
   if (!batchData.length) return;
-  const rows = [['text','label','confidence'],...batchData.map(r=>['"'+r.text.replace(/"/g,'""')+'"',r.label,(r.confidence*100).toFixed(1)+'%'])];
+ const rows = [['text','hasil'],
+...batchData.map(r=>[
+  '"' + r.text.replace(/"/g,'""') + '"',
+  r.label === 'FRAUD'
+    ? 'TERINDIKASI PENIPUAN'
+    : 'AMAN'
+])];
   const blob = new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
   const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='hasil_analisis.csv'; a.click();
 }
