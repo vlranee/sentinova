@@ -17,8 +17,6 @@
     --border: #D8D4CC; --white: #FFFFFF;
   }
   body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; }
-  
-  /* REVISI POIN 1: Header dibuat adaptif agar tidak kaku di layar kecil */
   header { 
     background: var(--ink); 
     padding: 0 2rem; 
@@ -34,8 +32,6 @@
   }
   .logo { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.1rem; color: var(--white); letter-spacing: -0.01em; white-space: nowrap; }
   .logo span { color: var(--accent); }
-  
-  /* REVISI POIN 1: Navigasi menu bisa di-scroll horizontal jika space tidak muat */
   nav { 
     display: flex; 
     gap: 0; 
@@ -85,11 +81,6 @@
   .verdict-badge { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.1rem; padding: 0.4rem 1rem; border-radius: 6px; letter-spacing: 0.04em; }
   .verdict-badge.fraud { background: #FEE2E2; color: var(--accent); }
   .verdict-badge.nonfraud { background: #D1FAE5; color: var(--safe); }
-  .gauge-wrap { display: flex; align-items: center; gap: 1.2rem; margin-bottom: 1.2rem; }
-  .gauge-svg { flex-shrink: 0; }
-  .gauge-label { font-family: 'Sora', sans-serif; }
-  .gauge-label .conf-num { font-size: 2rem; font-weight: 700; line-height: 1; }
-  .gauge-label .conf-text { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
   .xai-section { margin-top: 1rem; }
   .xai-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.5rem; }
   .text-annotated { font-size: 0.9rem; line-height: 1.8; background: var(--surface); padding: 0.75rem 1rem; border-radius: 7px; border: 1px solid var(--border); }
@@ -103,20 +94,31 @@
   .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes bounce { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
   
+  /* === VISUALISASI === */
   .vis-header { margin-bottom: 1.5rem; }
   .vis-header h2 { font-family: 'Sora', sans-serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.3rem; }
   .vis-header p { color: var(--muted); font-size: 0.88rem; }
-  .vis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-  
-  @media (max-width: 700px) { .vis-grid { grid-template-columns: 1fr; } }
+
+  /* Row 1: Pie + Bar (50/50) */
+  .vis-grid-top { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  /* Row 2: Top Keywords (full width) */
+  .vis-grid-mid { margin-bottom: 1.5rem; }
+  /* Row 3: Word Cloud (full width) */
+  .vis-grid-bot { }
+
+  @media (max-width: 700px) { 
+    .vis-grid-top { grid-template-columns: 1fr; }
+  }
   
   .chart-panel { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
-  .chart-title { font-family: 'Sora', sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--ink); margin-bottom: 1rem; }
-  .chart-sub { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.75rem; }
+  .chart-title { font-family: 'Sora', sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--ink); margin-bottom: 0.35rem; }
+  .chart-sub { font-size: 0.75rem; color: var(--muted); margin-bottom: 1rem; }
   canvas { max-width: 100%; }
-  .wordcloud-panel { grid-column: 1 / -1; background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
+  .wordcloud-panel { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
   .empty-vis { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 0.88rem; line-height: 1.7; }
   .empty-vis .empty-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+  /* Batch */
   .drop-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 3rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; background: var(--white); }
   .drop-zone:hover, .drop-zone.drag-over { border-color: var(--ink); background: var(--panel); }
   .drop-zone input { display: none; }
@@ -124,14 +126,14 @@
   .drop-title { font-family: 'Sora', sans-serif; font-weight: 600; margin-bottom: 0.3rem; }
   .drop-sub { font-size: 0.82rem; color: var(--muted); }
   .batch-results { margin-top: 1.5rem; }
-  
   .batch-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--white); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
   .batch-table th { background: var(--panel); padding: 0.65rem 1rem; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--border); }
   .batch-table td { padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); color: var(--ink); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .batch-table tr:last-child td { border-bottom: none; }
   .badge-fraud { color: var(--accent); font-weight: 700; }
   .badge-nonfraud { color: var(--safe); font-weight: 700; }
-  
+
+  /* Edukasi */
   .edu-intro { font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem; line-height: 1.7; }
   .edu-section { margin-bottom: 2rem; }
   .edu-section h2 { font-family: 'Sora', sans-serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--panel); }
@@ -159,12 +161,11 @@
   .stat-chip strong { font-family: 'Sora', sans-serif; font-size: 1.1rem; display: block; }
   .tips-list.note-list li::before { content: "•"; color: var(--muted); font-weight: 700; }
 
-  /* REVISI POIN 2: Pengaturan layout padding & canvas khusus di resolusi HP */
   @media (max-width: 600px) {
     .tab { padding: 1rem; }
     .panel, .chart-panel, .wordcloud-panel { padding: 1rem; }
     #wc-canvas { height: 180px !important; }
-    .batch-table td { max-width: 120px; } /* Mencegah kolom tabel meluap */
+    .batch-table td { max-width: 120px; }
   }
 </style>
 </head>
@@ -222,20 +223,39 @@
     Belum ada data.<br>Analisis beberapa teks terlebih dahulu, lalu kembali ke halaman ini.
   </div>
   <div id="vis-content" style="display:none">
-    <div class="vis-grid">
+
+    <!-- ROW 1: Pie + Bar -->
+    <div class="vis-grid-top">
       <div class="chart-panel">
         <div class="chart-title">Distribusi Prediksi</div>
         <div class="chart-sub">Proporsi Fraud vs Non-Fraud</div>
         <canvas id="pie-chart" height="200"></canvas>
       </div>
-      <div class="chart-panel" style="display:none;">
+      <div class="chart-panel">
+        <div class="chart-title">Jumlah Prediksi</div>
+        <div class="chart-sub">Total hasil klasifikasi</div>
+        <canvas id="bar-chart" height="200"></canvas>
       </div>
+    </div>
+
+    <!-- ROW 2: Top Keyword Fraud -->
+    <div class="vis-grid-mid">
+      <div class="chart-panel">
+        <div class="chart-title">Top 10 Kata Kunci Fraud</div>
+        <div class="chart-sub">Frekuensi kemunculan kata fraud dari teks yang dianalisis</div>
+        <canvas id="kw-chart" height="160"></canvas>
+      </div>
+    </div>
+
+    <!-- ROW 3: Word Cloud -->
+    <div class="vis-grid-bot">
       <div class="wordcloud-panel">
         <div class="chart-title">Word Cloud — Kata Sering Muncul</div>
-        <div class="chart-sub">Dari semua teks yang dianalisis</div>
+        <div class="chart-sub">Dari semua teks yang dianalisis (merah = kata fraud)</div>
         <canvas id="wc-canvas"></canvas>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -261,8 +281,7 @@
     <div style="overflow-x:auto;">
       <table class="batch-table">
         <thead>
-         <tr><th>#</th><th>Teks</th> <th>Hasil</th>
-         </tr>
+         <tr><th>#</th><th>Teks</th><th>Hasil</th></tr>
         </thead>
         <tbody id="batch-tbody"></tbody>
       </table>
@@ -362,8 +381,10 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const session = { results: [], allWords: [] };
+const session = { results: [], allWords: [], kwFreq: {} };
 let pieChart = null;
+let barChart = null;
+let kwChart = null;
 
 const FRAUD_KEYWORDS = [
   'hadiah','menang','klik','transfer','rekening','gratis','dp','uang','bayar',
@@ -453,6 +474,13 @@ function showResult(text, label, confidence, keywords) {
 
 function addToSession(text, label, confidence) {
   session.results.push({ text, label });
+  // Hitung frekuensi keyword fraud yang muncul
+  const lower = text.toLowerCase();
+  FRAUD_KEYWORDS.forEach(kw => {
+    if (lower.includes(kw.toLowerCase())) {
+      session.kwFreq[kw] = (session.kwFreq[kw] || 0) + 1;
+    }
+  });
   session.allWords.push(...text.toLowerCase().split(/\W+/).filter(w => w.length > 2 && !STOPWORDS.has(w)));
   updateStats();
 }
@@ -471,27 +499,132 @@ function renderVisual() {
   document.getElementById('vis-empty').style.display = hasData ? 'none' : 'block';
   document.getElementById('vis-content').style.display = hasData ? 'block' : 'none';
   if (!hasData) return;
+
   const fraud = session.results.filter(r => r.label === 'FRAUD').length;
   const nonfraud = session.results.length - fraud;
+
+  // --- PIE CHART ---
   if (pieChart) pieChart.destroy();
   pieChart = new Chart(document.getElementById('pie-chart'), {
     type: 'doughnut',
-    data: { labels: ['Fraud', 'Non-Fraud'], datasets: [{ data: [fraud, nonfraud], backgroundColor: ['#D64045','#2E7D5A'], borderWidth: 0, hoverOffset: 4 }] },
-    options: { plugins: { legend: { position: 'bottom', labels: { font: { family: 'Plus Jakarta Sans', size: 12 }, padding: 16 } } }, cutout: '65%' }
+    data: {
+      labels: ['Fraud', 'Non-Fraud'],
+      datasets: [{
+        data: [fraud, nonfraud],
+        backgroundColor: ['#D64045', '#2E7D5A'],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { family: 'Plus Jakarta Sans', size: 12 }, padding: 16 }
+        }
+      },
+      cutout: '65%'
+    }
   });
+
+  // --- BAR CHART ---
+  if (barChart) barChart.destroy();
+  barChart = new Chart(document.getElementById('bar-chart'), {
+    type: 'bar',
+    data: {
+      labels: ['Fraud', 'Non-Fraud'],
+      datasets: [{
+        data: [fraud, nonfraud],
+        backgroundColor: ['#D64045CC', '#2E7D5ACC'],
+        borderColor: ['#D64045', '#2E7D5A'],
+        borderWidth: 1.5,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, font: { family: 'Plus Jakarta Sans', size: 11 } },
+          grid: { color: '#EDEAE3' }
+        },
+        x: {
+          ticks: { font: { family: 'Plus Jakarta Sans', size: 12 } },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  // --- TOP KEYWORD FRAUD (horizontal bar) ---
+  const kwSorted = Object.entries(session.kwFreq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
+  if (kwChart) kwChart.destroy();
+  if (kwSorted.length > 0) {
+    kwChart = new Chart(document.getElementById('kw-chart'), {
+      type: 'bar',
+      data: {
+        labels: kwSorted.map(([kw]) => kw),
+        datasets: [{
+          data: kwSorted.map(([, cnt]) => cnt),
+          backgroundColor: '#D6404533',
+          borderColor: '#D64045',
+          borderWidth: 1.5,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: { stepSize: 1, font: { family: 'Plus Jakarta Sans', size: 11 } },
+            grid: { color: '#EDEAE3' }
+          },
+          y: {
+            ticks: { font: { family: 'Plus Jakarta Sans', size: 12 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  } else {
+    // Tidak ada keyword fraud — tampilkan pesan
+    const ctx = document.getElementById('kw-chart').getContext('2d');
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.fillStyle = '#8A8680';
+    ctx.font = '13px Plus Jakarta Sans';
+    ctx.textAlign = 'center';
+    ctx.fillText('Tidak ada kata kunci fraud terdeteksi', ctx.canvas.width / 2, 60);
+  }
+
+  // --- WORD CLOUD ---
   const freq = {};
-  session.allWords.forEach(w => { freq[w] = (freq[w]||0)+1; });
-  const list = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,60);
+  session.allWords.forEach(w => { freq[w] = (freq[w] || 0) + 1; });
+  const list = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 60);
   if (list.length > 0) {
     const canvas = document.getElementById('wc-canvas');
-    
-    /* REVISI POIN 3: Kalkulasi lebar canvas mengikuti pembungkus secara dinamis */
     const containerWidth = canvas.parentElement.clientWidth;
-    canvas.width = containerWidth - 32; 
+    canvas.width = containerWidth - 32;
     canvas.height = window.innerWidth < 600 ? 180 : 280;
-    
-    canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
-    WordCloud(canvas, { list, gridSize:12, weightFactor: s=>Math.max(10, s*(window.innerWidth < 600 ? 4 : 8)), fontFamily:'Plus Jakarta Sans', color: w => FRAUD_KEYWORDS.some(k=>w.toLowerCase().includes(k.toLowerCase())) ? '#D64045' : (Math.random()>0.5?'#1A1A2E':'#8A8680'), rotateRatio:0.3, backgroundColor:'#FFFFFF' });
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    WordCloud(canvas, {
+      list,
+      gridSize: 12,
+      weightFactor: s => Math.max(10, s * (window.innerWidth < 600 ? 4 : 8)),
+      fontFamily: 'Plus Jakarta Sans',
+      color: w => FRAUD_KEYWORDS.some(k => w.toLowerCase().includes(k.toLowerCase())) ? '#D64045' : (Math.random() > 0.5 ? '#1A1A2E' : '#8A8680'),
+      rotateRatio: 0.3,
+      backgroundColor: '#FFFFFF'
+    });
   }
 }
 
@@ -520,16 +653,16 @@ function handleCSV(file) {
       batchData.push({text,label});
       addToSession(text,label,confidence);
       const isFraud = label==='FRAUD';
-      tbody.innerHTML +='<tr><td>'+(i+1)+'</td><td title="'+escapeHtml(text)+'">'+ escapeHtml(text.slice(0,60))+ (text.length>60?'…':'')+ '</td><td class="'+ (isFraud?'badge-fraud':'badge-nonfraud')+ '">'+ (isFraud ? 'TERINDIKASI PENIPUAN' : 'AMAN')+ '</td></tr>';
+      tbody.innerHTML += '<tr><td>'+(i+1)+'</td><td title="'+escapeHtml(text)+'">'+escapeHtml(text.slice(0,60))+(text.length>60?'…':'')+'</td><td class="'+(isFraud?'badge-fraud':'badge-nonfraud')+'">'+(isFraud ? 'TERINDIKASI PENIPUAN' : 'AMAN')+'</td></tr>';
     }
     const fraudCount = batchData.filter(r=>r.label==='FRAUD').length;
-    document.getElementById('batch-summary').textContent = texts.length+' teks dianalisis — '+ fraudCount+' Terindikasi Penipuan, '+ (texts.length-fraudCount)+' Aman';
+    document.getElementById('batch-summary').textContent = texts.length+' teks dianalisis — '+fraudCount+' Terindikasi Penipuan, '+(texts.length-fraudCount)+' Aman';
   };
   reader.readAsText(file);
 }
 function downloadBatchCSV() {
   if (!batchData.length) return;
-  const rows = [['text','hasil'], ...batchData.map(r=>['"' + r.text.replace(/"/g,'""') + '"', r.label === 'FRAUD' ? 'TERINDIKASI PENIPUAN' : 'AMAN'])];
+  const rows = [['text','hasil'], ...batchData.map(r=>['"'+r.text.replace(/"/g,'""')+'"', r.label==='FRAUD'?'TERINDIKASI PENIPUAN':'AMAN'])];
   const blob = new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
   const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='hasil_analisis.csv'; a.click();
 }
