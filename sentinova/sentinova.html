@@ -17,17 +17,59 @@
     --border: #D8D4CC; --white: #FFFFFF;
   }
   body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; }
-  header { background: var(--ink); padding: 0 2rem; display: flex; align-items: center; gap: 2rem; height: 56px; position: sticky; top: 0; z-index: 100; }
+  
+  /* REVISI POIN 1: Header dibuat adaptif agar tidak kaku di layar kecil */
+  header { 
+    background: var(--ink); 
+    padding: 0 2rem; 
+    display: flex; 
+    align-items: center; 
+    gap: 2rem; 
+    height: auto; 
+    min-height: 56px; 
+    position: sticky; 
+    top: 0; 
+    z-index: 100; 
+    flex-wrap: wrap;
+  }
   .logo { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.1rem; color: var(--white); letter-spacing: -0.01em; white-space: nowrap; }
   .logo span { color: var(--accent); }
-  nav { display: flex; gap: 0; flex: 1; }
-  nav button { background: none; border: none; color: rgba(255,255,255,0.5); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem; font-weight: 500; padding: 0 1.1rem; height: 56px; cursor: pointer; transition: color 0.15s, border-bottom 0.15s; border-bottom: 2px solid transparent; letter-spacing: 0.01em; }
+  
+  /* REVISI POIN 1: Navigasi menu bisa di-scroll horizontal jika space tidak muat */
+  nav { 
+    display: flex; 
+    gap: 0; 
+    flex: 1; 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch; 
+  }
+  nav button { 
+    background: none; 
+    border: none; 
+    color: rgba(255,255,255,0.5); 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    font-size: 0.82rem; 
+    font-weight: 500; 
+    padding: 0 1.1rem; 
+    height: 56px; 
+    cursor: pointer; 
+    transition: color 0.15s, border-bottom 0.15s; 
+    border-bottom: 2px solid transparent; 
+    letter-spacing: 0.01em; 
+    flex-shrink: 0; 
+  }
   nav button:hover { color: rgba(255,255,255,0.8); }
   nav button.active { color: var(--white); border-bottom-color: var(--accent); }
+  
   .tab { display: none; padding: 2rem; max-width: 1000px; margin: 0 auto; }
   .tab.active { display: block; }
   .analyze-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-  @media (max-width: 700px) { .analyze-grid { grid-template-columns: 1fr; } }
+  
+  @media (max-width: 700px) { 
+    .analyze-grid { grid-template-columns: 1fr; } 
+    header { padding: 0 1rem; gap: 1rem; }
+  }
+  
   .panel { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
   .panel-label { font-family: 'Sora', sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
   textarea { width: 100%; min-height: 160px; border: 1.5px solid var(--border); border-radius: 8px; padding: 1rem; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.92rem; color: var(--ink); background: var(--surface); resize: vertical; transition: border-color 0.15s; line-height: 1.6; }
@@ -60,11 +102,14 @@
   .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
   .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes bounce { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
+  
   .vis-header { margin-bottom: 1.5rem; }
   .vis-header h2 { font-family: 'Sora', sans-serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.3rem; }
   .vis-header p { color: var(--muted); font-size: 0.88rem; }
   .vis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  
   @media (max-width: 700px) { .vis-grid { grid-template-columns: 1fr; } }
+  
   .chart-panel { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
   .chart-title { font-family: 'Sora', sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--ink); margin-bottom: 1rem; }
   .chart-sub { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.75rem; }
@@ -79,12 +124,14 @@
   .drop-title { font-family: 'Sora', sans-serif; font-weight: 600; margin-bottom: 0.3rem; }
   .drop-sub { font-size: 0.82rem; color: var(--muted); }
   .batch-results { margin-top: 1.5rem; }
+  
   .batch-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--white); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
   .batch-table th { background: var(--panel); padding: 0.65rem 1rem; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--border); }
   .batch-table td { padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); color: var(--ink); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .batch-table tr:last-child td { border-bottom: none; }
   .badge-fraud { color: var(--accent); font-weight: 700; }
   .badge-nonfraud { color: var(--safe); font-weight: 700; }
+  
   .edu-intro { font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem; line-height: 1.7; }
   .edu-section { margin-bottom: 2rem; }
   .edu-section h2 { font-family: 'Sora', sans-serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--panel); }
@@ -111,6 +158,14 @@
   .stat-chip { background: var(--panel); border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.82rem; }
   .stat-chip strong { font-family: 'Sora', sans-serif; font-size: 1.1rem; display: block; }
   .tips-list.note-list li::before { content: "•"; color: var(--muted); font-weight: 700; }
+
+  /* REVISI POIN 2: Pengaturan layout padding & canvas khusus di resolusi HP */
+  @media (max-width: 600px) {
+    .tab { padding: 1rem; }
+    .panel, .chart-panel, .wordcloud-panel { padding: 1rem; }
+    #wc-canvas { height: 180px !important; }
+    .batch-table td { max-width: 120px; } /* Mencegah kolom tabel meluap */
+  }
 </style>
 </head>
 <body>
@@ -173,12 +228,12 @@
         <div class="chart-sub">Proporsi Fraud vs Non-Fraud</div>
         <canvas id="pie-chart" height="200"></canvas>
       </div>
-      <div class="chart-panel">
+      <div class="chart-panel" style="display:none;">
       </div>
       <div class="wordcloud-panel">
         <div class="chart-title">Word Cloud — Kata Sering Muncul</div>
         <div class="chart-sub">Dari semua teks yang dianalisis</div>
-        <canvas id="wc-canvas" width="900" height="280" style="width:100%;height:280px;"></canvas>
+        <canvas id="wc-canvas"></canvas>
       </div>
     </div>
   </div>
@@ -302,6 +357,8 @@
       <li>Tidak mendukung teks campuran Indonesia-Inggris (code-switching) secara optimal</li>
      </ul>
     </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -379,9 +436,7 @@ function showResult(text, label, confidence, keywords) {
   document.getElementById('verdict-block').classList.add('show');
   const isFraud = label === 'FRAUD';
   const badge = document.getElementById('verdict-badge');
-  badge.textContent = isFraud
-  ? 'TERINDIKASI PENIPUAN'
-  : 'AMAN';
+  badge.textContent = isFraud ? 'TERINDIKASI PENIPUAN' : 'AMAN';
   badge.className = 'verdict-badge ' + (isFraud ? 'fraud' : 'nonfraud');
   let annotated = escapeHtml(text);
   const foundKw = [];
@@ -430,8 +485,14 @@ function renderVisual() {
   const list = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,60);
   if (list.length > 0) {
     const canvas = document.getElementById('wc-canvas');
+    
+    /* REVISI POIN 3: Kalkulasi lebar canvas mengikuti pembungkus secara dinamis */
+    const containerWidth = canvas.parentElement.clientWidth;
+    canvas.width = containerWidth - 32; 
+    canvas.height = window.innerWidth < 600 ? 180 : 280;
+    
     canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
-    WordCloud(canvas, { list, gridSize:12, weightFactor: s=>Math.max(12,s*8), fontFamily:'Plus Jakarta Sans', color: w => FRAUD_KEYWORDS.some(k=>w.toLowerCase().includes(k.toLowerCase())) ? '#D64045' : (Math.random()>0.5?'#1A1A2E':'#8A8680'), rotateRatio:0.3, backgroundColor:'#FFFFFF' });
+    WordCloud(canvas, { list, gridSize:12, weightFactor: s=>Math.max(10, s*(window.innerWidth < 600 ? 4 : 8)), fontFamily:'Plus Jakarta Sans', color: w => FRAUD_KEYWORDS.some(k=>w.toLowerCase().includes(k.toLowerCase())) ? '#D64045' : (Math.random()>0.5?'#1A1A2E':'#8A8680'), rotateRatio:0.3, backgroundColor:'#FFFFFF' });
   }
 }
 
@@ -460,7 +521,7 @@ function handleCSV(file) {
       batchData.push({text,label});
       addToSession(text,label,confidence);
       const isFraud = label==='FRAUD';
-     tbody.innerHTML +='<tr><td>'+(i+1)+'</td><td title="'+escapeHtml(text)+'">'+ escapeHtml(text.slice(0,60))+ (text.length>60?'…':'')+ '</td><td class="'+ (isFraud?'badge-fraud':'badge-nonfraud')+ '">'+ (isFraud ? 'TERINDIKASI PENIPUAN' : 'AMAN')+ '</td></tr>';
+      tbody.innerHTML +='<tr><td>'+(i+1)+'</td><td title="'+escapeHtml(text)+'">'+ escapeHtml(text.slice(0,60))+ (text.length>60?'…':'')+ '</td><td class="'+ (isFraud?'badge-fraud':'badge-nonfraud')+ '">'+ (isFraud ? 'TERINDIKASI PENIPUAN' : 'AMAN')+ '</td></tr>';
     }
     const fraudCount = batchData.filter(r=>r.label==='FRAUD').length;
     document.getElementById('batch-summary').textContent = texts.length+' teks dianalisis — '+ fraudCount+' Terindikasi Penipuan, '+ (texts.length-fraudCount)+' Aman';
@@ -469,13 +530,7 @@ function handleCSV(file) {
 }
 function downloadBatchCSV() {
   if (!batchData.length) return;
- const rows = [['text','hasil'],
-...batchData.map(r=>[
-  '"' + r.text.replace(/"/g,'""') + '"',
-  r.label === 'FRAUD'
-    ? 'TERINDIKASI PENIPUAN'
-    : 'AMAN'
-])];
+  const rows = [['text','hasil'], ...batchData.map(r=>['"' + r.text.replace(/"/g,'""') + '"', r.label === 'FRAUD' ? 'TERINDIKASI PENIPUAN' : 'AMAN'])];
   const blob = new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
   const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='hasil_analisis.csv'; a.click();
 }
